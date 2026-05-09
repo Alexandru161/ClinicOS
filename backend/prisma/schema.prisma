@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  RECEPTIONIST
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id                    String         @id @default(cuid())
+  email                 String         @unique
+  passwordHash          String
+  fullName              String
+  role                  Role           @default(RECEPTIONIST)
+  isActive              Boolean        @default(true)
+  appointmentsAsDoctor  Appointment[]  @relation("DoctorAppointments")
+  appointmentsCreated   Appointment[]  @relation("CreatedAppointments")
+  auditLogs             AuditLog[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+model Patient {
+  id                   String         @id @default(cuid())
+  medicalRecordNumber   String         @unique
+  firstName            String
+  lastName             String
+  dateOfBirth          DateTime?
+  sex                  String?
+  phone                String?
+  email                String?
+  address              String?
+  notes                String?
+  appointments         Appointment[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+}
+
+model Appointment {
+  id            String             @id @default(cuid())
+  patientId     String
+  doctorId      String?
+  createdById   String?
+  scheduledAt   DateTime
+  status        AppointmentStatus  @default(SCHEDULED)
+  reason        String
+  notes         String?
+  patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor        User?              @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: SetNull)
+  creator       User?              @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([patientId, scheduledAt])
+  @@index([doctorId, scheduledAt])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  actorId     String?
+  action      String
+  entity      String
+  entityId    String
+  metadata    Json?
+  actor       User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+}
