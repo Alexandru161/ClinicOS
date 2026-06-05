@@ -22,23 +22,62 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+model StaffRole {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        Role     @unique
+  name        String
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@map("roles")
+}
+
 model User {
-  id                    String         @id @default(cuid())
+  id                    String         @id @default(uuid()) @db.Uuid
   email                 String         @unique
   passwordHash          String
   fullName              String
   role                  Role           @default(RECEPTIONIST)
+  roleId                String?        @db.Uuid
+  roleRelation          StaffRole?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
   isActive              Boolean        @default(true)
+  doctorProfile         Doctor?
   appointmentsAsDoctor  Appointment[]  @relation("DoctorAppointments")
   appointmentsCreated   Appointment[]  @relation("CreatedAppointments")
+  medicalRecordsAuthored MedicalRecord[] @relation("MedicalRecordAuthor")
   auditLogs             AuditLog[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+
+  @@index([roleId, isActive])
+  @@map("users")
+}
+
+model Doctor {
+  id                String        @id @default(uuid()) @db.Uuid
+  userId            String        @unique @db.Uuid
+  licenseNumber     String        @unique
+  specialty         String
+  department        String?
+  phone             String?
+  isAvailable       Boolean       @default(true)
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments      Appointment[] @relation("DoctorProfileAppointments")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([specialty])
+  @@index([department])
+  @@map("doctors")
 }
 
 model Patient {
-  id                   String         @id @default(cuid())
-  medicalRecordNumber   String         @unique
+  id                   String          @id @default(uuid()) @db.Uuid
+  medicalRecordNumber  String          @unique
+  idnp                 String?         @unique
   firstName            String
   lastName             String
   dateOfBirth          DateTime?
@@ -48,39 +87,79 @@ model Patient {
   address              String?
   notes                String?
   appointments         Appointment[]
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  medicalRecords       MedicalRecord[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([dateOfBirth])
+  @@map("patients")
 }
 
 model Appointment {
-  id            String             @id @default(cuid())
-  patientId     String
-  doctorId      String?
-  createdById   String?
-  scheduledAt   DateTime
-  status        AppointmentStatus  @default(SCHEDULED)
-  reason        String
-  notes         String?
-  patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor        User?              @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: SetNull)
-  creator       User?              @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id              String             @id @default(uuid()) @db.Uuid
+  patientId       String             @db.Uuid
+  doctorId        String?            @db.Uuid
+  doctorProfileId String?            @db.Uuid
+  createdById     String?            @db.Uuid
+  scheduledAt     DateTime
+  status          AppointmentStatus  @default(SCHEDULED)
+  reason          String
+  notes           String?
+  room            String?
+  patient         Patient            @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor          User?              @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: SetNull)
+  doctorProfile   Doctor?            @relation("DoctorProfileAppointments", fields: [doctorProfileId], references: [id], onDelete: SetNull)
+  creator         User?              @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
+  medicalRecords  MedicalRecord[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([patientId, scheduledAt])
   @@index([doctorId, scheduledAt])
+  @@index([doctorProfileId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("appointments")
+}
+
+model MedicalRecord {
+  id           String       @id @default(uuid()) @db.Uuid
+  patientId    String       @db.Uuid
+  appointmentId String?     @db.Uuid
+  authorId     String?      @db.Uuid
+  recordType   String
+  diagnosis    String?
+  treatment    String?
+  prescription String?
+  notes        String?
+  isSensitive  Boolean      @default(false)
+  patient      Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  appointment  Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  author       User?        @relation("MedicalRecordAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([patientId, createdAt])
+  @@index([appointmentId])
+  @@index([authorId, createdAt])
+  @@index([recordType])
+  @@map("medical_records")
 }
 
 model AuditLog {
-  id          String    @id @default(cuid())
-  actorId     String?
+  id          String   @id @default(uuid()) @db.Uuid
+  actorId     String?  @db.Uuid
   action      String
   entity      String
   entityId    String
+  ipAddress   String?
+  userAgent   String?
   metadata    Json?
-  actor       User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
 
   @@index([entity, entityId])
   @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("activity_logs")
 }

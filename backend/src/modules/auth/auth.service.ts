@@ -32,6 +32,19 @@ function createToken(user: User) {
   );
 }
 
+function createRefreshToken(user: User) {
+  return jwt.sign(
+    {
+      type: 'refresh'
+    },
+    env.JWT_SECRET,
+    {
+      subject: user.id,
+      expiresIn: '7d'
+    }
+  );
+}
+
 export async function registerUser(
   input: { email: string; password: string; fullName: string; role?: Role },
   actor?: { role: Role }
@@ -64,7 +77,8 @@ export async function registerUser(
 
   return {
     user: sanitizeUser(user),
-    token: createToken(user)
+    token: createToken(user),
+    refreshToken: createRefreshToken(user)
   };
 }
 
@@ -85,7 +99,8 @@ export async function loginUser(input: { email: string; password: string }) {
 
   return {
     user: sanitizeUser(user),
-    token: createToken(user)
+    token: createToken(user),
+    refreshToken: createRefreshToken(user)
   };
 }
 
@@ -108,4 +123,19 @@ export async function getCurrentUser(userId: string) {
   }
 
   return user;
+}
+
+export async function refreshUserToken(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user || !user.isActive) {
+    throw new ApiError(401, 'User not found or inactive.');
+  }
+
+  return {
+    token: createToken(user),
+    user: sanitizeUser(user)
+  };
 }

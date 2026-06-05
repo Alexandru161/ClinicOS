@@ -3,6 +3,8 @@ import { authRouter } from '../modules/auth/auth.routes';
 import { appointmentRouter } from '../modules/appointments/appointment.routes';
 import { patientRouter } from '../modules/patients/patient.routes';
 import { userRouter } from '../modules/users/user.routes';
+import medicalRouter from '../modules/medical/medical.routes';
+import { dashboardRouter } from '../modules/dashboard/dashboard.routes';
 
 export const apiRouter = Router();
 
@@ -15,6 +17,8 @@ apiRouter.get('/health', (_request, response) => {
 });
 
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/dashboard', dashboardRouter);
 apiRouter.use('/patients', patientRouter);
 apiRouter.use('/appointments', appointmentRouter);
 apiRouter.use('/users', userRouter);
+apiRouter.use('/medical-records', medicalRouter);

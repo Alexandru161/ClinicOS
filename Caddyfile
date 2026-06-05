@@ -1,12 +1,15 @@
 :80 {
   encode zstd gzip
 
-  @api path /api/*
-  handle @api {
+  # Proxy all /api requests to backend
+  handle /api/* {
     reverse_proxy backend:4000
   }
 
-  root * /srv
-  try_files {path} /index.html
-  file_server
+  # Serve static frontend files with SPA fallback
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
 }

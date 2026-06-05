@@ -2,10 +2,10 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
-import pino from 'pino';
 import { env } from './config/env';
 import { apiRouter } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error';
+import logger from './utils/logger';
 
 export const app = express();
 
@@ -21,9 +21,7 @@ app.use(
 );
 app.use(
   pinoHttp({
-    logger: pino({
-      level: env.NODE_ENV === 'production' ? 'info' : 'debug'
-    })
+    logger
   })
 );
 

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
+import { ZodError } from 'zod';
 import { ApiError } from '../utils/api-error';
 
 export function notFoundHandler(_request: Request, response: Response) {
@@ -22,6 +23,14 @@ export function errorHandler(error: unknown, _request: Request, response: Respon
     response.status(400).json({
       error: 'Database Error',
       message: 'A database constraint was violated.'
+    });
+    return;
+  }
+
+  if (error instanceof ZodError) {
+    response.status(400).json({
+      error: 'Validation Error',
+      message: error.issues.map((issue) => issue.message).join(' ')
     });
     return;
   }

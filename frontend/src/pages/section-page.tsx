@@ -1,5 +1,3 @@
-import { ArrowUpRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface SectionPageProps {
@@ -15,13 +13,7 @@ export function SectionPage({ title, description }: SectionPageProps) {
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-slate-300">
-        <p>
-          This route is scaffolded for the next slice of the clinic workflow. The backend already exposes the corresponding API domain and the shell is wired for role-aware navigation.
-        </p>
-        <Button className="justify-between">
-          Continue building
-          <ArrowUpRight className="h-4 w-4" />
-        </Button>
+        <p>This section will be available after the clinic administrator enables it for your account.</p>
       </CardContent>
     </Card>
   );

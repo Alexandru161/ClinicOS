@@ -13,6 +13,7 @@ export interface AuthUser {
 export interface AuthPayload {
   user: AuthUser;
   token: string;
+  refreshToken: string;
 }
 
 export function login(input: { email: string; password: string }) {
@@ -26,5 +27,15 @@ export function register(input: { email: string; password: string; fullName: str
   return apiRequest<AuthPayload>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(input)
+  });
+}
+
+export function refreshToken(refreshToken: string) {
+  return apiRequest<{ user: AuthUser; token: string }>('/auth/refresh', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${refreshToken}`
+    },
+    body: JSON.stringify({})
   });
 }

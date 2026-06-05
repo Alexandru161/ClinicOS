@@ -1,92 +1,129 @@
-# ClinicOS
+<p align="center">
+  <img src="frontend/public/clinicos-logo.svg" width="88" height="88" alt="ClinicOS logo" />
+</p>
 
-ClinicOS is a production-ready medical clinic management system scaffold built with React, Vite, TailwindCSS, shadcn/ui patterns, Node.js, Express, PostgreSQL, Prisma, JWT, bcrypt, Docker, Docker Compose, and Caddy.
+<h1 align="center">ClinicOS</h1>
+
+<p align="center">
+  ClinicOS is a medical CRM for everyday clinic work: patients, appointments, staff accounts,
+  medical records, CSV imports, and role-based access in one clean workspace.
+</p>
+
+---
+
+## What It Does
+
+ClinicOS is built for a small or mid-sized clinic where the front desk, doctors, and administrators need to work from the same data.
+
+- Patients can be imported from CSV and searched by staff.
+- Appointments are created with doctor, patient, date, time, status, and conflict checks.
+- Doctors can work with their own patient records and visit notes.
+- Administrators can manage staff accounts, roles, users, imports, and audit activity.
+- Interface settings let users choose language, theme, and scale.
 
 ## Stack
 
-- Frontend: React + Vite + TailwindCSS + shadcn/ui-style primitives
-- Backend: Node.js + Express + Prisma
-- Database: PostgreSQL
-- Authentication: JWT + bcrypt
-- Deployment: Docker + Docker Compose
-- Reverse proxy: Caddy
-- Roles: ADMIN, DOCTOR, RECEPTIONIST
+- React + Vite + TailwindCSS
+- Node.js + Express
+- Prisma + PostgreSQL
+- Docker Compose + Caddy
 
-## Project Structure
+## Roles
 
-```text
-ClinicOS/
-  frontend/
-    src/
-      api/
-      components/
-      lib/
-      pages/
-    Dockerfile
-    package.json
-    tailwind.config.ts
-    vite.config.ts
-  backend/
-    prisma/
-    src/
-      config/
-      middleware/
-      modules/
-      routes/
-      types/
-      utils/
-    Dockerfile
-    package.json
-    tsconfig.json
-  docker-compose.yml
-  Caddyfile
-  README.md
+`ADMIN` sees the whole clinic and manages users, imports, appointments, and records.
+
+`DOCTOR` sees their own appointments, patients, and medical records.
+
+`RECEPTIONIST` can work with patients and appointments, but medical notes stay restricted.
+
+## Local Run
+
+Create environment files from the examples:
+
+```bash
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
 
-## What is included
+Start the project:
 
-- Clean service-oriented backend structure with auth, patients, appointments, and user routes
-- Prisma schema with `User`, `Patient`, `Appointment`, and `AuditLog` models
-- Bootstrap admin flow for the first account, then admin-only staff creation
-- Responsive dashboard and login shell on the frontend
-- Shared UI primitives in a shadcn/ui-compatible style
-- Dockerized app flow with PostgreSQL and Caddy reverse proxy
+```bash
+docker compose up --build -d
+```
 
-## Environment Variables
+Open:
 
-Copy the example environment files before running the stack:
+- App: `http://localhost`
+- Health check: `http://localhost/api/health`
+- Prisma Studio, when started manually: `http://localhost:5555`
 
-- `backend/.env.example` -> `backend/.env`
-- `frontend/.env.example` -> `frontend/.env`
+The production container runs database migrations on startup. Seed data is not loaded automatically.
 
-Backend variables:
+## First Admin
 
-- `NODE_ENV`
-- `PORT`
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `JWT_EXPIRES_IN`
-- `CORS_ORIGIN`
+On a clean database, open `/register`. The first created account becomes the administrator.
 
-Frontend variables:
+For local development only, you can also create an admin through the manual seed script:
 
-- `VITE_API_BASE_URL`
+```bash
+cd backend
+BOOTSTRAP_ADMIN_EMAIL=admin@example.com BOOTSTRAP_ADMIN_PASSWORD='change-me-strongly' npm run prisma:seed
+```
 
-## Local Development
+Keep real passwords and secrets out of code. Use `.env` files only.
 
-1. Install dependencies in `frontend/` and `backend/`.
-2. Generate Prisma client and apply migrations from `backend/`.
-3. Run the backend API and frontend Vite server separately.
+## CSV Patient Import
 
-Example commands:
+Admins can import patients from `/admin`.
+
+Required columns:
+
+- `medicalRecordNumber`
+- `firstName`
+- `lastName`
+
+Optional columns:
+
+- `idnp`
+- `dateOfBirth`
+- `sex`
+- `phone`
+- `email`
+- `address`
+- `notes`
+
+Validation:
+
+- `dateOfBirth` must use `YYYY-MM-DD`
+- `idnp` must contain exactly 13 digits
+- `email` must be a valid email
+- `phone` must look like a phone number
+
+Rows are matched by `medicalRecordNumber`: existing patients are updated, new patients are created.
+
+## Deployment Notes
+
+1. Copy the repository to the server.
+2. Create `.env` from `.env.example`.
+3. Set strong values for database password, `JWT_SECRET`, `CLINICOS_DATABASE_URL`, and CORS.
+4. Run `docker compose up --build -d`.
+5. Check `http://your-domain/api/health`.
+6. Create the first admin or restore/import clinic data.
+
+## Development
+
+Backend:
 
 ```bash
 cd backend
 npm install
-npx prisma generate
-npx prisma migrate dev
+npm run prisma:generate
+npm run prisma:migrate
 npm run dev
 ```
+
+Frontend:
 
 ```bash
 cd frontend
@@ -94,36 +131,12 @@ npm install
 npm run dev
 ```
 
-## Docker
+## Data Safety
 
-Bring up the stack with:
+Do not run:
 
 ```bash
-docker compose up --build
+docker compose down -v
 ```
 
-The flow is:
-
-- PostgreSQL starts first
-- The backend applies Prisma migrations and starts on port 4000
-- The frontend builds into a shared static volume
-- Caddy serves the frontend and proxies `/api` to the backend
-
-## API Surface
-
-- `GET /api/health`
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `GET /api/patients`
-- `POST /api/patients`
-- `GET /api/appointments`
-- `POST /api/appointments`
-- `GET /api/users`
-
-## Next Steps
-
-- Add validation middleware around patient and appointment creation
-- Add pagination, filtering, and audit logging helpers
-- Expand the frontend into authenticated role-based routes
-- Add seeded demo users and fixture data
+That removes the PostgreSQL volume. Use database backups before destructive Docker commands.
