@@ -52,6 +52,8 @@ services:
   caddy:
     image: caddy:2.8-alpine
     restart: unless-stopped
+    environment:
+      CLINICOS_SITE_ADDRESS: ${CLINICOS_SITE_ADDRESS:-:80}
     depends_on:
       backend:
         condition: service_healthy
@@ -59,10 +61,16 @@ services:
         condition: service_completed_successfully
     ports:
       - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - frontend_dist:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   db_data:
   frontend_dist:
+  caddy_data:
+  caddy_config:

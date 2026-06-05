@@ -1,4 +1,4 @@
-:80 {
+{$CLINICOS_SITE_ADDRESS::80} {
   encode zstd gzip
 
   # Proxy all /api requests to backend
